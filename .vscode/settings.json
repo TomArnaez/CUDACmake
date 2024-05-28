@@ -77,6 +77,17 @@
         "xstring": "cpp",
         "xtr1common": "cpp",
         "xtree": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "cinttypes": "cpp",
+        "complex": "cpp",
+        "deque": "cpp",
+        "queue": "cpp",
+        "random": "cpp",
+        "stack": "cpp",
+        "typeindex": "cpp",
+        "xstddef": "cpp",
+        "filesystem": "cpp",
+        "__nullptr": "cpp",
+        "numeric": "cpp"
     }
 }

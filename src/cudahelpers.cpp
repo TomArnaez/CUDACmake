@@ -1,16 +1,15 @@
 #include <cudahelpers.hpp>
 #include <cuda_runtime.h>
+#include <iostream>
+
+#include <cuda.h>
 
 namespace SLCuda {
 
 CudaStream::CudaStream(cudaStream_t stream)
     : stream(stream) {}
 
-CudaStream::~CudaStream() {
-    cudaStreamDestroy(stream);
-}
-
-tl::expected<uint64_t, cudaError_t> CudaStream::getId() {
+tl::expected<uint64_t, cudaError_t> CudaStream::getId() const {
     uint64_t id;
     cudaError_t err;
     return ((err = cudaStreamGetId(stream, &id)) != cudaSuccess) ? id : err;
@@ -27,15 +26,20 @@ tl::expected<CudaStream, cudaError_t> CudaStream::create() {
         return tl::make_unexpected(err);
     }
 
-    return CudaStream(stream);
+    return CudaStream(std::move(stream));
 }
 
 CudaExternalMemory::CudaExternalMemory(size_t size, cudaExternalMemoryHandleType handleType, cudaExternalMemory_t raw, void* data)
     : size(size), handleType(handleType), raw(raw), data(data) {}
 
-CudaExternalMemory::~CudaExternalMemory() {
-    cudaDestroyExternalMemory(raw);
+void* CudaExternalMemory::getDataPointer() const {
+    return data;
 }
+
+size_t CudaExternalMemory::getSize() const {
+    return size;
+}
+
 
 #ifdef _WIN64
 tl::expected<CudaExternalMemory, cudaError_t> CudaExternalMemory::create(HANDLE handle, size_t size, cudaExternalMemoryHandleType handleType)
@@ -60,7 +64,7 @@ tl::expected<CudaExternalMemory, cudaError_t> CudaExternalMemory::create(HANDLE 
 
     if ((err = cudaExternalMemoryGetMappedBuffer(&dataPtr, raw, &externalMemBufferDesc)) != cudaSuccess)
         return tl::unexpected(err);
-        
+
     return CudaExternalMemory(size, handleType, raw, dataPtr);
 }
 #endif
@@ -68,9 +72,6 @@ tl::expected<CudaExternalMemory, cudaError_t> CudaExternalMemory::create(HANDLE 
 CudaExternalSemaphore::CudaExternalSemaphore(cudaExternalSemaphore_t raw, cudaExternalSemaphoreHandleType handleType)
     : raw(raw), handleType(handleType) {}
 
-CudaExternalSemaphore::~CudaExternalSemaphore() {
-    cudaDestroyExternalSemaphore(raw);
-}
 
 tl::expected<CudaExternalSemaphore, cudaError_t> CudaExternalSemaphore::create(HANDLE handle, cudaExternalSemaphoreHandleType handleType) {
     cudaExternalSemaphoreHandleDesc externalSemaphoreHandleDesc = {};
@@ -93,6 +94,7 @@ tl::expected<void, cudaError_t> CudaExternalSemaphore::wait(CudaStream& stream, 
     extSemaphoreWaitParams.params.fence.value = waitValue;
 
     cudaError_t err;
+
     if ((err = cudaWaitExternalSemaphoresAsync(&raw, &extSemaphoreWaitParams, 1, stream.handle())) != cudaSuccess)
         return tl::unexpected(err);
 

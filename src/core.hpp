@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <thrust/device_vector.h>
 #include <vector>
 
 #include <corrections.hpp>

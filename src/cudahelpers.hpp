@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cuda_runtime.h>
 #include <tl/expected.hpp>
 
@@ -16,10 +18,9 @@ class CudaStream {
 
     CudaStream(cudaStream_t stream);
 public:
-    ~CudaStream();
     static tl::expected<CudaStream, cudaError_t> create();
 
-    tl::expected<uint64_t, cudaError_t> getId();
+    tl::expected<uint64_t, cudaError_t> getId() const;
     cudaStream_t handle() const;
 };
 
@@ -31,8 +32,10 @@ class CudaExternalMemory {
 
     CudaExternalMemory(size_t size, cudaExternalMemoryHandleType handleType, cudaExternalMemory_t raw, void* data);
 public:
-    ~CudaExternalMemory();
     static tl::expected<CudaExternalMemory, cudaError_t> create(HANDLE handle, size_t size, cudaExternalMemoryHandleType handleType);
+
+    void* getDataPointer() const;
+    size_t getSize() const;
 };
 
 class CudaExternalSemaphore {
@@ -41,7 +44,6 @@ class CudaExternalSemaphore {
 
     CudaExternalSemaphore(cudaExternalSemaphore_t raw, cudaExternalSemaphoreHandleType handleType);
 public:
-    ~CudaExternalSemaphore();
     static tl::expected<CudaExternalSemaphore, cudaError_t> create(HANDLE handle, cudaExternalSemaphoreHandleType handleType);
 
     tl::expected<void, cudaError_t> wait(CudaStream& stream, uint64_t waitValue);

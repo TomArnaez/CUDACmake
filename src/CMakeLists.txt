@@ -19,6 +19,8 @@ set(CMAKE_CUDA_STANDARD 20)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_EXTENSIONS OFF)
 
+list(APPEND CUDA_NVCC_FLAGS "--extended-lambda")
+
 ###############################################################################
 # Dependencies
 ###############################################################################
@@ -32,17 +34,20 @@ find_package(CUDAToolkit REQUIRED)
 
 add_library(cudaLib SHARED)
 
+target_compile_options(cudaLib PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:${CUDA_NVCC_FLAGS}>)
+
 target_sources(cudaLib
     PUBLIC
+        externalcuda.hpp
+        PRIVATE
         core.hpp
         cudahelpers.hpp
-        externalcuda.hpp
-    PRIVATE
-        core.cpp
+        core.cu
         corrections.hpp
-        corrections.cpp
+        corrections.cu
         cudahelpers.cpp
-        externalcuda.cpp
+        externalcuda.cu
+        histogrameq.cu
 )
 
 target_include_directories(cudaLib
@@ -50,5 +55,5 @@ target_include_directories(cudaLib
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(cudaLib PRIVATE tl::expected CUDA::cudart)
+target_link_libraries(cudaLib tl::expected CUDA::cudart)
 set_target_properties(cudaLib PROPERTIES CUDA_ARCHITECTURES native)
