@@ -9,22 +9,25 @@ const std::string DARK_IMAGE_PATH = TEST_IMAGES_DIR + "AVG_Dark_2802_2400.tif";
 const std::string GAIN_IMAGE_PATH = TEST_IMAGES_DIR + "AVG_Gain_2802_2400.tif";
 const std::string DEFECT_IMAGE_PATH = TEST_IMAGES_DIR + "DefectMap.tif";
 const std::string PCB_IMAGE_PATH = TEST_IMAGES_DIR + "AVG_PCB_2802_2400.tif";
+const std::string HS_DARK_PATH = TEST_IMAGES_DIR + "2824HSDark.tif";
 
 TEST(VulkanAppTest, InitializeVulkan) {
     cv::Mat darkMap = cv::imread(DARK_IMAGE_PATH, cv::IMREAD_UNCHANGED);
     cv::Mat gainMap = cv::imread(GAIN_IMAGE_PATH, cv::IMREAD_UNCHANGED);
     cv::Mat defectMap = cv::imread(DEFECT_IMAGE_PATH, cv::IMREAD_UNCHANGED);
     cv::Mat PCBImage = cv::imread(PCB_IMAGE_PATH, cv::IMREAD_UNCHANGED);
+    cv::Mat HSDarkImage = cv::imread(HS_DARK_PATH, cv::IMREAD_UNCHANGED);
 
-    const uint32_t width = PCBImage.cols;
-    const uint32_t height = PCBImage.rows;
-    const uint32_t numPixels = PCBImage.rows * PCBImage.cols;
+    const uint32_t width = HSDarkImage.cols;
+    const uint32_t height = HSDarkImage.rows;
+    const uint32_t numPixels = HSDarkImage.rows * HSDarkImage.cols;
     const size_t imageSizeInBytes = numPixels * sizeof(unsigned short);
 
-    std::span<unsigned short> inputSpan(reinterpret_cast<unsigned short*>(PCBImage.ptr()), numPixels);
-    std::span<unsigned short> darkMapSpan(reinterpret_cast<unsigned short*>(darkMap.ptr()), numPixels);
-    std::span<unsigned short> gainMapSpan(reinterpret_cast<unsigned short*>(gainMap.ptr()), numPixels);
-    std::span<unsigned short> defectMapSpan(reinterpret_cast<unsigned short*>(defectMap.ptr()), numPixels);
+    // std::span<unsigned short> inputSpan(reinterpret_cast<unsigned short*>(PCBImage.ptr()), numPixels);
+    // std::span<unsigned short> darkMapSpan(reinterpret_cast<unsigned short*>(darkMap.ptr()), numPixels);
+    // std::span<unsigned short> gainMapSpan(reinterpret_cast<unsigned short*>(gainMap.ptr()), numPixels);
+    // std::span<unsigned short> defectMapSpan(reinterpret_cast<unsigned short*>(defectMap.ptr()), numPixels);
+    std::span<unsigned short> HSDarkSpan(reinterpret_cast<unsigned short*>(HSDarkImage.ptr()), numPixels);
 
     vk::Instance instance = initializeVulkan();
 
@@ -89,13 +92,13 @@ TEST(VulkanAppTest, InitializeVulkan) {
             return -1;
         }).value();
 
-    cuda.setDarkCorrection(darkMapSpan, 300);
-    cuda.setGainCorrection(gainMapSpan);
-    cuda.setDefectCorrection(defectMapSpan);
+    // cuda.setDarkCorrection(darkMapSpan, 300);
+    // cuda.setGainCorrection(gainMapSpan);
+    // cuda.setDefectCorrection(defectMapSpan);
     cuda.setHistogramEquailisation(true);
 
     void* data = device.mapMemory(srcMemory, 0, imageSizeInBytes);
-    memcpy(data, PCBImage.data, imageSizeInBytes);
+    memcpy(data, HSDarkImage.data, imageSizeInBytes);
     device.unmapMemory(srcMemory);
 
     vk::CommandBuffer copySrcToInputCmdBuffer = createCopyCommandBuffer(
@@ -146,7 +149,7 @@ TEST(VulkanAppTest, InitializeVulkan) {
     std::cout << "Execution time: " << duration.count() << " microseconds" << std::endl;
 
     void* finalData = device.mapMemory(finalMemory, 0, imageSizeInBytes);
-    cv::Mat outputImage(PCBImage.rows, PCBImage.cols, PCBImage.type(), finalData);
+    cv::Mat outputImage(HSDarkImage.rows, HSDarkImage.cols, HSDarkImage.type(), finalData);
     cv::imwrite("finalimg.tiff", outputImage);
     device.unmapMemory(finalMemory);
 }

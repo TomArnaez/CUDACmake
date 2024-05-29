@@ -18,7 +18,6 @@ ExternalCuda::ExternalCuda(
     inputExternalMemory(inputExternalMemory),
     outputExternalMemory(outputExternalMemory),
     timelineSemaphore(timelineSemaphore),
-    gpuBuffer(width * height),
     core(Core::create(width, height).value()) {}
 
 tl::expected<ExternalCuda, std::string> ExternalCuda::create(ExternalCudaCreateInfo createInfo) {
@@ -62,18 +61,18 @@ tl::expected<void, std::string> ExternalCuda::run(uint64_t waitValue, uint64_t s
         });
 
     cudaMemcpyAsync(
-        (thrust::raw_pointer_cast(gpuBuffer.data())),
+        (thrust::raw_pointer_cast(core.getBuffer().data())),
         inputExternalMemory.getDataPointer(),
         inputExternalMemory.getSize(),
         cudaMemcpyDeviceToDevice,
         core.getStream().handle()
     );
 
-    core.run(gpuBuffer);
+    core.run();
 
     cudaMemcpyAsync(
         outputExternalMemory.getDataPointer(),
-        (thrust::raw_pointer_cast(gpuBuffer.data())),
+        (thrust::raw_pointer_cast(core.getBuffer().data())),
         inputExternalMemory.getSize(),
         cudaMemcpyDeviceToDevice,
         core.getStream().handle()
